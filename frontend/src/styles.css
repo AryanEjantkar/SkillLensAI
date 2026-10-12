@@ -1240,4 +1240,57 @@ h1 {
   font-weight: 700;
 }
 
+/* TOPIC EXPLANATION VIEW */
+.explanation-view-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 18px;
+}
+
+.explanation-meta-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.clean-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  color: var(--purple);
+  margin-bottom: 4px;
+}
+
+.explanation-topic-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #242042;
+}
+
+.explanation-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.explanation-body-text {
+  padding: 22px 26px;
+  border-radius: 16px;
+  background: #fbfaff;
+  border: 1px solid #e7e3f2;
+  color: #3b3754;
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 8px #261f4904;
+}
+
+
 

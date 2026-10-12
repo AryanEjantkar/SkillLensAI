@@ -147,13 +147,36 @@ const studyModes = ["Explain", "Flashcards", "Quiz", "All"];
 
 function buildPrompt(text, mode) {
   const directions = {
-    Explain: "Explain the material clearly and accurately. Start with the core idea, then explain important details and give one useful example.",
+    Explain: "Explain this topic clearly, thoroughly, and accurately. Start with the core intuitive idea, break down important details, principles, mechanisms, and provide concrete real-world examples.",
     Flashcards: "Create 5 to 8 concise study flashcards for this specific topic. Format each card strictly as:\nQ: [Question or concept]\nA: [Clear, informative answer]\nFocus solely on this topic.",
-    Quiz: "Create a multiple-choice quiz with 4 to 5 questions specifically for this topic. Format each question strictly as:\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Letter]\nExplanation: [Why this option is correct]\nFocus solely on this topic.",
-    All: "Create a complete study set with three distinct sections for this specific topic: 1) Explanation, 2) Flashcards (formatted strictly with Q: and A:), and 3) Quiz (with questions 1-4, options A-D, Answer: [Letter], and Explanation:).",
+    Quiz: "First, provide a clear conceptual Explanation of the topic and its core ideas. Then, create a 4-question multiple-choice quiz strictly formatted as:\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Letter]\nExplanation: [Why this is correct]",
+    All: "Create a complete study set with three distinct sections: 1) Explanation (an in-depth, clear explanation of the topic, its key concepts and real-world examples), 2) Flashcards (formatted strictly with Q: and A:), and 3) Quiz (with questions 1-4, options A-D, Answer: [Letter], and Explanation:).",
   };
   return `${directions[mode]}\n\nStudy topic or question:\n${text}`;
 }
+
+function extractTopicExplanation(text) {
+  if (!text) return "";
+  
+  // 1. Look for explicit Explanation section
+  const expMatch = text.match(/(?:^|\n)(?:#+\s*|\*\*|\d+[\.\)]\s*)?Explanation:?\s*([\s\S]*?)(?=\n(?:#+\s*|\*\*|\d+[\.\)]\s*)?(?:Flashcards|Quiz|Multiple[- ]Choice Quiz|Knowledge Check):?|$)/i);
+  if (expMatch && expMatch[1].trim().length > 30) {
+    return expMatch[1].trim();
+  }
+
+  // 2. Strip Quiz section
+  let withoutQuiz = text.replace(/(?:^|\n)(?:#+\s*|\*\*|\d+[\.\)]\s*)?(?:Quiz|Multiple[- ]Choice Quiz|Knowledge Check):?[\s\S]*$/i, "");
+  withoutQuiz = withoutQuiz.replace(/(?:\n\s*\d+[\.\)]\s+.*\n\s*[\*\-]?\s*\(?[A-Da-d]\)?[\.:\s][\s\S]*)$/i, "");
+
+  // 3. Strip Flashcards block from the pure explanation
+  const pureText = withoutQuiz.replace(/(?:^|\n)(?:#+\s*|\*\*|\d+[\.\)]\s*)?(?:Flashcards|Study Flashcards):?[\s\S]*$/i, "");
+  if (pureText.trim().length > 60) {
+    return pureText.trim();
+  }
+
+  return withoutQuiz.trim() || text;
+}
+
 
 function parseFlashcardsFromText(text, topicFallback = "Study Card") {
   if (!text) return [];
@@ -285,7 +308,7 @@ export default function App() {
   // Result parsed items
   const [parsedCards, setParsedCards] = useState([]);
   const [parsedQuizList, setParsedQuizList] = useState([]);
-  const [activeResultTab, setActiveResultTab] = useState("Interactive");
+  const [activeResultTab, setActiveResultTab] = useState("Explanation");
 
   useEffect(() => {
     if (activeInput !== "Image" || !selectedFile) {
@@ -887,29 +910,68 @@ export default function App() {
                         </h2>
                       </div>
                       <div className="result-header-actions">
-                        {(parsedCards.length > 0 || parsedQuizList.length > 0) && (
-                          <div className="tab-pill-group">
+                        <div className="tab-pill-group">
+                          <button
+                            className={`pill-btn${activeResultTab === "Explanation" ? " active" : ""}`}
+                            type="button"
+                            onClick={() => setActiveResultTab("Explanation")}
+                          >
+                            <BookOpen size={13} /> Topic Explanation
+                          </button>
+                          {(parsedCards.length > 0 || parsedQuizList.length > 0) && (
                             <button
                               className={`pill-btn${activeResultTab === "Interactive" ? " active" : ""}`}
                               type="button"
                               onClick={() => setActiveResultTab("Interactive")}
                             >
-                              <Sparkles size={13} /> Interactive
+                              <Sparkles size={13} /> Flashcards & Quiz
                             </button>
-                            <button
-                              className={`pill-btn${activeResultTab === "Text" ? " active" : ""}`}
-                              type="button"
-                              onClick={() => setActiveResultTab("Text")}
-                            >
-                              <FileText size={13} /> Raw Output
-                            </button>
-                          </div>
-                        )}
+                          )}
+                          <button
+                            className={`pill-btn${activeResultTab === "Raw" ? " active" : ""}`}
+                            type="button"
+                            onClick={() => setActiveResultTab("Raw")}
+                          >
+                            <FileText size={13} /> Full Text
+                          </button>
+                        </div>
                         <span className="model-badge">{MODEL_LABEL}</span>
                       </div>
                     </div>
 
-                    {activeResultTab === "Interactive" && (parsedCards.length > 0 || parsedQuizList.length > 0) ? (
+                    {activeResultTab === "Explanation" ? (
+                      <div className="explanation-view-card">
+                        <div className="explanation-meta-row">
+                          <div>
+                            <span className="clean-label"><BookOpen size={13} /> TOPIC EXPLANATION</span>
+                            <h3 className="explanation-topic-title">{activeDeck.topic}</h3>
+                          </div>
+                          <div className="explanation-action-row">
+                            {parsedCards.length > 0 && (
+                              <button
+                                className="action-pill-btn"
+                                type="button"
+                                onClick={() => setActiveSection("Flashcards")}
+                              >
+                                <Layers3 size={13} /> Flashcards ({parsedCards.length})
+                              </button>
+                            )}
+                            {parsedQuizList.length > 0 && (
+                              <button
+                                className="action-pill-btn"
+                                type="button"
+                                onClick={() => setActiveSection("Quizzes")}
+                              >
+                                <CircleHelp size={13} /> Take Quiz ({parsedQuizList.length})
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="explanation-body-text">
+                          {extractTopicExplanation(result)}
+                        </div>
+                      </div>
+                    ) : activeResultTab === "Interactive" && (parsedCards.length > 0 || parsedQuizList.length > 0) ? (
                       <div className="result-interactive-view">
                         {parsedCards.length > 0 && (
                           <div className="interactive-block">
