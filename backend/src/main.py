@@ -33,9 +33,9 @@ MAX_EXTRACTED_TEXT_CHARS = 40_000
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PROMPT_DIRECTIONS = {
     "Explain": "Explain the material clearly. Start with the core idea, then explain important details and one useful example.",
-    "Flashcards": "Create concise study flashcards. Format every card as Q: followed by A:.",
-    "Quiz": "Create a short quiz about the material and put the answer key after the questions.",
-    "All": "Create a compact study set with an explanation, flashcards with answers, and a quiz with an answer key.",
+    "Flashcards": "Create concise study flashcards for this topic. Format each card strictly as:\nQ: [Clear question or concept]\nA: [Clear, comprehensive answer]",
+    "Quiz": "Create a multiple-choice quiz with 4 to 5 questions for this topic. Format each question strictly as:\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Correct Option Letter]\nExplanation: [Brief explanation]",
+    "All": "Create a complete study set with three distinct sections: 1) Explanation, 2) Flashcards (formatted strictly as Q: and A:), and 3) Quiz (formatted with questions 1-4, options A-D, Answer: [Letter], and Explanation:).",
 }
 
 if FRONTEND_DIRECTORY.is_dir():
