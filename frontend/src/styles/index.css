@@ -1,0 +1,76 @@
+/* frontend/src/styles/index.css */
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Color Palette matching Mockup */
+  --bg-app: #f4f3fb;
+  --bg-sidebar: #f4f3fb;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #faf9fe;
+  --bg-hover: #ede9fe;
+
+  --color-primary: #5845d8;
+  --color-primary-hover: #4835c4;
+  --color-primary-light: #ede9fe;
+  --color-primary-text: #4338ca;
+
+  --text-main: #141738;
+  --text-secondary: #525975;
+  --text-muted: #8c93a8;
+  --text-light: #64748b;
+
+  --border-subtle: #e6e5f2;
+  --border-focus: #5845d8;
+  --border-dashed: #d5d3e8;
+
+  --badge-bg: #eaecf5;
+  --badge-text: #6b7280;
+
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --error: #ef4444;
+  --error-bg: #fef2f2;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+
+  --shadow-sm: 0 1px 3px rgba(20, 23, 56, 0.04);
+  --shadow-md: 0 4px 14px rgba(20, 23, 56, 0.06);
+  --shadow-lg: 0 10px 25px rgba(20, 23, 56, 0.08);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

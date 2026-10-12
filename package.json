@@ -1,0 +1,22 @@
+{
+  "name": "skillai-gemma4",
+  "version": "1.0.0",
+  "description": "SkillAI - Google Gemma 4 Model Integration with Gemini API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test:gemma": "node test-gemma.js"
+  },
+  "keywords": ["gemma-4", "gemini-api", "google-genai", "multimodal"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.28.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

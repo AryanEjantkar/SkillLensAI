@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillAI — Gemma 4 Studio</title>
+  <meta name="description" content="SkillAI powered by Google Gemma 4 (gemma-4-26b-a4b-it) multimodal AI engine via the official Gemini API.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header with Model Info Badge -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="url(#brand-grad)" />
+            <path d="M16 6L24.66 11V21L16 26L7.34 21V11L16 6Z" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="4" fill="#67e8f9"/>
+            <defs>
+              <linearGradient id="brand-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4f46e5" />
+                <stop offset="1" stop-color="#06b6d4" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">SkillAI</h1>
+          <span class="brand-subtitle">Gemma 4 Multimodal Suite</span>
+        </div>
+      </div>
+
+      <div class="model-badge-container">
+        <div class="model-pill">
+          <span class="pulse-dot active" id="status-dot"></span>
+          <span class="model-name-label" id="model-label">gemma-4-26b-a4b-it</span>
+          <span class="tag-moe">MoE 25.2B</span>
+        </div>
+        <button id="verify-btn" class="btn-verify" title="Check model status & key availability">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          Verify
+        </button>
+      </div>
+    </header>
+
+    <!-- Status / Warning Banner (e.g. Missing Key) -->
+    <div id="notice-banner" class="notice-banner hidden">
+      <div class="notice-content">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="notice-text">Notice</span>
+      </div>
+      <button class="notice-dismiss" id="notice-dismiss">&times;</button>
+    </div>
+
+    <!-- Main Content Workspace -->
+    <main class="main-layout">
+      <!-- Conversation & Output Stream -->
+      <section class="chat-viewport" id="chat-viewport">
+        <div class="welcome-card" id="welcome-card">
+          <div class="welcome-icon">⚡</div>
+          <h2>Google Gemma 4 Integration</h2>
+          <p class="welcome-desc">
+            Directly running with model ID <code class="code-highlight">gemma-4-26b-a4b-it</code>. Experience state-of-the-art 4B active parameter MoE efficiency with multimodal comprehension.
+          </p>
+
+          <div class="capabilities-grid">
+            <div class="cap-card">
+              <span class="cap-icon">🧠</span>
+              <div class="cap-text">
+                <strong>Active 4B MoE</strong>
+                <span>Efficient 25.2B total parameter architecture</span>
+              </div>
+            </div>
+            <div class="cap-card">
+              <span class="cap-icon">🖼️</span>
+              <div class="cap-text">
+                <strong>Multimodal Input</strong>
+                <span>Attach photos, diagrams, or code screenshots</span>
+              </div>
+            </div>
+            <div class="cap-card">
+              <span class="cap-icon">🔒</span>
+              <div class="cap-text">
+                <strong>Safe Backend Proxy</strong>
+                <span>API key strictly held server-side</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sample-prompts">
+            <span class="sample-label">Quick test prompts:</span>
+            <div class="sample-chips">
+              <button class="chip" data-prompt="Analyze the algorithmic complexity of QuickSort vs MergeSort with pros and cons.">Sorting Algorithms</button>
+              <button class="chip" data-prompt="Write a modern, responsive card component in CSS using glassmorphism.">Glassmorphic CSS</button>
+              <button class="chip" data-prompt="Explain quantum entanglement as if I am 12 years old.">Quantum Physics</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Message List -->
+        <div class="message-list" id="message-list"></div>
+
+        <!-- Loading State Skeleton -->
+        <div class="loading-indicator hidden" id="loading-indicator">
+          <div class="loading-avatar">G4</div>
+          <div class="loading-body">
+            <div class="loading-header">
+              <span class="loading-title">Gemma 4 is thinking...</span>
+              <div class="typing-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="skeleton-line shimmer full"></div>
+            <div class="skeleton-line shimmer medium"></div>
+            <div class="skeleton-line shimmer short"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Area & Image Upload Dock -->
+      <footer class="input-panel">
+        <!-- Image Preview Dock (Collapsible) -->
+        <div class="image-preview-dock hidden" id="image-preview-dock">
+          <div class="preview-card">
+            <img id="preview-img" src="" alt="Uploaded image preview" />
+            <div class="preview-info">
+              <span class="preview-name" id="preview-name">image.png</span>
+              <span class="preview-size" id="preview-size">0 KB</span>
+            </div>
+            <button class="btn-remove-image" id="remove-image-btn" title="Remove image">&times;</button>
+          </div>
+          <div class="multimodal-verified-pill">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Multimodal input enabled for gemma-4-26b-a4b-it
+          </div>
+        </div>
+
+        <form class="composer-form" id="composer-form">
+          <div class="composer-container">
+            <!-- Hidden File Input -->
+            <input type="file" id="image-input" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+
+            <!-- Attachment Button -->
+            <button type="button" class="btn-attach" id="attach-btn" title="Attach Image (PNG, JPG, WEBP, GIF)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+
+            <!-- Textarea -->
+            <textarea
+              id="prompt-input"
+              rows="1"
+              placeholder="Message Gemma 4 (gemma-4-26b-a4b-it)... (Shift+Enter for new line)"
+              required
+            ></textarea>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-send" id="send-btn" title="Send Prompt">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Bottom micro-bar -->
+          <div class="composer-footer">
+            <div class="input-counter" id="char-counter">0 / 32,000 characters</div>
+            <div class="disclaimer">Official Google Gen AI SDK • Target ID: gemma-4-26b-a4b-it</div>
+          </div>
+        </form>
+      </footer>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
