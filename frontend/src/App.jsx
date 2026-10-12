@@ -295,6 +295,8 @@ export default function App() {
   // Direct On-Demand Topic Curators in tabs
   const [quickTopicInput, setQuickTopicInput] = useState("");
   const [curatingTopic, setCuratingTopic] = useState(false);
+  const [autoCurate, setAutoCurate] = useState(true);
+  const autoCurateTimeoutRef = useRef(null);
 
   // Flashcards Study Interactive State
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -423,15 +425,19 @@ export default function App() {
     }
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    const cleanPrompt = prompt.trim();
+  async function executeCuration(customPrompt = null, customMode = null) {
+    if (autoCurateTimeoutRef.current) {
+      clearTimeout(autoCurateTimeoutRef.current);
+    }
+    const targetPrompt = (customPrompt !== null ? customPrompt : prompt).trim();
+    const targetMode = customMode !== null ? customMode : studyMode;
+
     setError("");
     setResult("");
     setParsedCards([]);
     setParsedQuizList([]);
 
-    if (activeInput === "Text" && !cleanPrompt) {
+    if (activeInput === "Text" && !targetPrompt) {
       setError("Add a topic or question first.");
       promptRef.current?.focus();
       return;
@@ -453,7 +459,7 @@ export default function App() {
         response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: buildPrompt(cleanPrompt, studyMode) }),
+          body: JSON.stringify({ prompt: buildPrompt(targetPrompt, targetMode) }),
         });
       } else if (activeInput === "Link") {
         response = await fetch("/api/generate/link", {
@@ -461,15 +467,15 @@ export default function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             url: linkUrl.trim(),
-            prompt: cleanPrompt,
-            study_mode: studyMode,
+            prompt: targetPrompt,
+            study_mode: targetMode,
           }),
         });
       } else {
         const formData = new FormData();
         formData.set("file", selectedFile);
-        formData.set("prompt", cleanPrompt);
-        formData.set("study_mode", studyMode);
+        formData.set("prompt", targetPrompt);
+        formData.set("study_mode", targetMode);
         const endpoint = activeInput === "Image" ? "/api/generate/image" : "/api/generate/document";
         response = await fetch(endpoint, { method: "POST", body: formData });
       }
@@ -482,11 +488,11 @@ export default function App() {
 
       // Determine topic title
       const topicTitle =
-        cleanPrompt.length > 0 && cleanPrompt.length < 50
-          ? cleanPrompt
+        targetPrompt.length > 0 && targetPrompt.length < 50
+          ? targetPrompt
           : selectedFile?.name
           ? selectedFile.name.replace(/\.[^/.]+$/, "")
-          : cleanPrompt.slice(0, 36) || "Study Topic";
+          : targetPrompt.slice(0, 36) || "Study Topic";
 
       // Parse interactive elements for this specific topic
       const extractedCards = parseFlashcardsFromText(textOutput, topicTitle);
@@ -501,6 +507,11 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSubmit(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    executeCuration();
   }
 
   async function handleExport() {
@@ -838,7 +849,24 @@ export default function App() {
                   ref={promptRef}
                   value={prompt}
                   maxLength={MAX_PROMPT_CHARS}
-                  onChange={(event) => setPrompt(event.target.value)}
+                  onChange={(event) => {
+                    const val = event.target.value;
+                    setPrompt(val);
+                    if (autoCurate && val.trim().length >= 8 && val.trim().endsWith("?")) {
+                      if (autoCurateTimeoutRef.current) clearTimeout(autoCurateTimeoutRef.current);
+                      autoCurateTimeoutRef.current = setTimeout(() => {
+                        if (!loading) {
+                          executeCuration(val.trim());
+                        }
+                      }, 750);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      executeCuration();
+                    }
+                  }}
                   placeholder={
                     activeInput === "Image"
                       ? "Ask a question about the image, or leave blank for a summary"
@@ -846,15 +874,28 @@ export default function App() {
                       ? "Ask about the document, or leave blank for a summary"
                       : activeInput === "Link"
                       ? "Ask about this page, or leave blank for a summary"
-                      : "Type your topic or paste notes, e.g. 'Photosynthesis in C3 and C4 plants' or 'Recursion in Computer Science'"
+                      : "Type your question or topic (press Enter or finish with '?' to curate immediately)..."
                   }
                   aria-describedby="prompt-count"
                 />
 
                 <div className="composer-footer">
-                  <span className="character-count" id="prompt-count">
-                    {prompt.length.toLocaleString()} / {MAX_PROMPT_CHARS.toLocaleString()}
-                  </span>
+                  <div className="composer-meta-hints">
+                    <span className="character-count" id="prompt-count">
+                      {prompt.length.toLocaleString()} / {MAX_PROMPT_CHARS.toLocaleString()}
+                    </span>
+                    <label
+                      className="instant-curate-toggle"
+                      title="Automatically curates immediately as soon as you type '?' or press Enter"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={autoCurate}
+                        onChange={(e) => setAutoCurate(e.target.checked)}
+                      />
+                      <span>⚡ Auto-curates on &apos;?&apos; or Enter</span>
+                    </label>
+                  </div>
                   <div className="composer-actions">
                     <div className="mode-picker" role="group" aria-label="Study set type">
                       {studyModes.map((mode) => (
@@ -1095,9 +1136,18 @@ export default function App() {
                   <input
                     type="text"
                     className="quick-curate-input"
-                    placeholder="Or type a new topic (e.g. Photosynthesis, Machine Learning)..."
+                    placeholder="Type a topic or question to curate flashcards immediately (press Enter or finish with '?')..."
                     value={quickTopicInput}
-                    onChange={(e) => setQuickTopicInput(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuickTopicInput(val);
+                      if (autoCurate && val.trim().length >= 6 && val.trim().endsWith("?")) {
+                        if (autoCurateTimeoutRef.current) clearTimeout(autoCurateTimeoutRef.current);
+                        autoCurateTimeoutRef.current = setTimeout(() => {
+                          if (!curatingTopic) handleDirectTopicCuration("Flashcards");
+                        }, 700);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleDirectTopicCuration("Flashcards");
                     }}
@@ -1247,9 +1297,18 @@ export default function App() {
                   <input
                     type="text"
                     className="quick-curate-input"
-                    placeholder="Type a new topic to generate a quiz with Gemma..."
+                    placeholder="Type a topic or question to generate quiz immediately (press Enter or finish with '?')..."
                     value={quickTopicInput}
-                    onChange={(e) => setQuickTopicInput(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuickTopicInput(val);
+                      if (autoCurate && val.trim().length >= 6 && val.trim().endsWith("?")) {
+                        if (autoCurateTimeoutRef.current) clearTimeout(autoCurateTimeoutRef.current);
+                        autoCurateTimeoutRef.current = setTimeout(() => {
+                          if (!curatingTopic) handleDirectTopicCuration("Quiz");
+                        }, 700);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleDirectTopicCuration("Quiz");
                     }}
