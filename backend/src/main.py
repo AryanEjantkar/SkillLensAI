@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from pypdf import PdfReader
 from starlette.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.src.config.settings import MAX_PROMPT_CHARS, MODEL_ID
 from backend.src.services.gemma_service import (
@@ -20,9 +21,22 @@ from backend.src.services.gemma_service import (
     GemmaRequestError,
     GemmaService,
 )
+from backend.app.api.routes.lessons import router as lessons_router
+from backend.app.api.routes.tutor import router as tutor_router
+from backend.app.api.routes.providers import providers_router
 
 logger = logging.getLogger(__name__)
-app = FastAPI(title="Gemma 4 Prompt Test", version="0.1.0")
+app = FastAPI(title="SkillLens Universal Learning Engine", version="2.0.0")
+
+# Enable CORS for cross-origin development (e.g. Vite dev server on port 5173)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 gemma_service = GemmaService()
 STATIC_DIRECTORY = Path(__file__).parent / "static"
 INDEX_FILE = STATIC_DIRECTORY / "index.html"
@@ -31,11 +45,18 @@ FRONTEND_INDEX_FILE = FRONTEND_DIRECTORY / "index.html"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_EXTRACTED_TEXT_CHARS = 40_000
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+# Mount modular lesson, adaptive tutor, and providers routes
+app.include_router(lessons_router, prefix="/api")
+app.include_router(tutor_router, prefix="/api")
+app.include_router(providers_router, prefix="/api")
+
+
 PROMPT_DIRECTIONS = {
-    "Explain": "Explain the material clearly. Start with the core idea, then explain important details and one useful example.",
-    "Flashcards": "Create concise study flashcards for this topic. Format each card strictly as:\nQ: [Clear question or concept]\nA: [Clear, comprehensive answer]",
-    "Quiz": "Create a multiple-choice quiz with 4 to 5 questions for this topic. Format each question strictly as:\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Correct Option Letter]\nExplanation: [Brief explanation]",
-    "All": "Create a complete study set with three distinct sections: 1) Explanation, 2) Flashcards (formatted strictly as Q: and A:), and 3) Quiz (formatted with questions 1-4, options A-D, Answer: [Letter], and Explanation:).",
+    "Explain": "Explain the material clearly. Start with the core idea, then explain important details with bullet points and bold key terms, and provide one useful example. Do not output '---' horizontal dividers.",
+    "Flashcards": "Create 6 to 8 concise study flashcards for this topic. Do not output '---' horizontal dividers. Format each card strictly as:\nQ: [Clear question or concept]\nA: [Clear, comprehensive answer]",
+    "Quiz": "Create an interactive multiple-choice quiz with 4 to 5 questions for this topic. Do not output '---' horizontal dividers. Format each question strictly as:\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Letter]\nExplanation: [Brief explanation]",
+    "All": "Create a complete study set with three distinct sections:\n### Explanation\n[Comprehensive explanation with bold key terms and bullet points]\n### Flashcards\nQ: [Question]\nA: [Answer]\n### Quiz\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Letter]\nExplanation: [Brief explanation]\nDo not output '---' horizontal dividers.",
 }
 
 if FRONTEND_DIRECTORY.is_dir():
@@ -269,6 +290,23 @@ def index() -> FileResponse:
     if FRONTEND_INDEX_FILE.is_file():
         return FileResponse(FRONTEND_INDEX_FILE)
     return FileResponse(INDEX_FILE)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_ico() -> FileResponse:
+    ico_file = FRONTEND_DIRECTORY / "favicon.ico"
+    if ico_file.is_file():
+        return FileResponse(ico_file, media_type="image/x-icon")
+    return FileResponse(STATIC_DIRECTORY / "favicon.ico")
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon_svg() -> FileResponse:
+    svg_file = FRONTEND_DIRECTORY / "favicon.svg"
+    if svg_file.is_file():
+        return FileResponse(svg_file, media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
 
 
 @app.post("/api/generate", response_model=PromptResponse)

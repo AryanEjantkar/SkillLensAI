@@ -1,90 +1,97 @@
-# SkillLens Study Workspace
+# SkillLens AI — Universal Interactive Learning Engine
 
-SkillLens is a React study workspace backed by a Python API. It uses Google's official Gen AI SDK and explicitly calls `gemma-4-26b-a4b-it`; it never substitutes a Gemini model.
+SkillLens AI is an AI-powered interactive learning platform that teaches virtually any academic or professional subject through dynamic visualizations, physics/chemistry/biology simulations, guided step-by-step explanations, KaTeX mathematical typesetting, and an adaptive Socratic tutor.
 
-## Setup (PowerShell)
+---
 
-From the repository root, create the backend environment and install its dependencies:
+## 1. Core Architecture & Features
 
+- **Universal Lesson Generator**: Enter any subject (Mathematics, Physics, Chemistry, Biology, Computer Science, Economics, Law, Arts, or open-ended topics). Structured Pydantic schemas enforce lesson objectives, sections, worked problems, flashcards, quizzes, and visualizations.
+- **Safe Dynamic Visualization Engine**: Strict component registry executing pure declarative JSON data. No arbitrary model-generated executable JavaScript or HTML is ever executed in the browser.
+  - `math_graph` / `calculus_graph`: Dynamic functions with variable sliders ($a, b, c$), tangent slope tracker $f'(x_0)$, and Riemann sum definite integrals $\sum f(x_i) \Delta x$.
+  - `physics_simulation`: Live 2D projectile kinematics with launch velocity, angle, gravity sliders (Earth, Moon, Mars presets), vectors, and trajectory trace.
+  - `chemistry_reaction`: Multi-stage reaction mechanism stepper, potential energy profile ($E_a, \Delta H$), and temperature kinetics.
+  - `biology_process`: Interactive cellular processes (e.g., Cellular Respiration, Photosynthesis) with clickable anatomical hotspots.
+  - `algorithm_visualizer`: Algorithmic execution (e.g., Binary Search, Sorting) with pointer indices and synchronized line-by-line pseudocode.
+  - `economics_market`: Supply and Demand market equilibrium with demand/supply shifters, consumer surplus, and producer surplus.
+  - `probability_distribution`: Continuous Gaussian bell curve with $\mu, \sigma$ sliders, shaded cumulative probability, and $z$-scores.
+  - `system_architecture`: Tiered system stacks, networking protocols, and architectural specifications.
+  - `timeline_flow`: Historical timelines and legal case flows with precedent milestones.
+  - `concept_map`: Universal fallback interactive knowledge graph with clickable nodes and relational links.
+  - `comparison_matrix`: Multidimensional comparison tables with criteria notes.
+  - `worked_example`: Step-by-step problem solver with revealable hints and verified solutions.
+- **Adaptive AI Tutor**: Floating contextual Socratic tutor drawer with misconception diagnosis, progressive hints, "Explain Simpler", and dynamic practice question generation.
+- **Multi-Provider AI Routing**:
+  - **Gemma** (`gemma-4-26b-a4b-it`): Official Google GenAI SDK model for lesson planning and curriculum.
+  - **Gemini** (`gemini-2.5-flash`): Optional cloud provider for complex multimodal analysis.
+  - **Ollama** (`gemma2:9b`): Local offline inference provider with zero cloud requests.
+
+---
+
+## 2. Environment Configuration
+
+Configure the following variables in `.env` (refer to `.env.example`):
+
+| Variable | Default Value | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | *(required for cloud)* | Google AI Studio API key |
+| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Configured Gemma model ID |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Configured Gemini model ID |
+| `DEFAULT_PROVIDER` | `gemma` | Default active inference provider (`gemma`, `gemini`, `ollama`) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Local Ollama HTTP daemon endpoint |
+| `OLLAMA_MODEL` | `gemma2:9b` | Local model tag in Ollama |
+| `REQUEST_TIMEOUT_SECONDS` | `30.0` | Timeout threshold for model inference |
+
+---
+
+## 3. Quickstart & Local Setup (PowerShell)
+
+### Backend Setup
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+### Frontend Setup
+```powershell
 npm install --prefix frontend
 ```
 
-Edit `.env` locally and set `GEMINI_API_KEY` to a newly rotated API key. Never commit `.env` or paste the key into chat; `.gitignore` excludes it. `.env.example` contains a placeholder only.
-
-## Verify Gemma before using the web page
-
-Run a direct prompt through the backend service first:
-
+### Smoke Test
+Verify Gemma model connectivity:
 ```powershell
-\.venv\Scripts\python.exe -m backend.src.smoke_test
+.\.venv\Scripts\python.exe check_gemma.py
 ```
 
-This sends a short prompt using `gemma-4-26b-a4b-it`. The authenticated model list for this account includes this ID, and the live smoke prompt succeeded. A failure is reported rather than silently retrying with a different model.
-
-The root-level shortcut is also available: `\.venv\Scripts\python.exe check_gemma.py`.
-
-## Development
-
-Start the backend in one terminal:
-
+### Run in Development
+**Terminal 1 (Backend API):**
 ```powershell
-\.venv\Scripts\python.exe -m uvicorn backend.src.main:app --reload --reload-dir backend
+.\.venv\Scripts\python.exe -m uvicorn backend.src.main:app --reload --reload-dir backend --port 8000
 ```
 
-In a second terminal, start Vite:
-
+**Terminal 2 (Frontend Dev Server):**
 ```powershell
 npm --prefix frontend run dev
 ```
+Open **http://127.0.0.1:5173** in your browser.
 
-Open <http://127.0.0.1:5173>. Vite proxies `/api/*` to FastAPI on port 8000. Text prompts, uploaded source material, loading, result, and error states are handled in the workspace.
-
-## Supported sources
-
-- Images: PNG upload with an optional question. PNG plus text was verified against `gemma-4-26b-a4b-it`; other image formats are rejected until verified.
-- Documents: PDF, DOCX, and TXT uploads. Text is extracted locally and sent to Gemma with the user query. Scanned/image-only PDFs do not include OCR.
-- Links: public HTTP(S) HTML, plain-text, and PDF pages. Redirects, non-standard ports, private/reserved hosts, unsupported media types, and content over 10 MB are rejected.
-- Uploads are limited to 10 MB and extracted text to 40,000 characters. Source content and the query are processed by the backend and sent to Gemma; the API key stays on the backend.
-
-## Production
-
-Build the React frontend, then run the backend:
-
+### Run in Production
 ```powershell
 npm --prefix frontend run build
-\.venv\Scripts\python.exe -m uvicorn backend.src.main:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn backend.src.main:app --host 127.0.0.1 --port 8000
 ```
+Open **http://127.0.0.1:8000** in your browser.
 
-FastAPI serves the built UI at <http://127.0.0.1:8000>. Before a frontend build exists, `/` falls back to the original simple prompt page.
+---
 
-## Run automated tests
+## 4. Automated Testing
+
+Run the offline pytest suite (22 unit tests covering schemas, providers, visualizations, tutor, and offline mode):
 
 ```powershell
-\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-The automated tests use a mock SDK client to verify the exact model ID and API behavior; they do not make a billable network call. The separate smoke test makes the real API request.
-
-## Files
-
-- `.gitignore`: excludes secrets, virtual environments, bytecode, and test cache.
-- `.env`: local, git-ignored backend API key configuration; set a rotated key locally.
-- `.env.example`: placeholder-only template for `GEMINI_API_KEY`.
-- `requirements.txt` and `requirements-dev.txt`: runtime and test dependencies, including Google's `google-genai` SDK.
-- `frontend/package.json` and `frontend/vite.config.js`: React/Vite framework setup and the development API proxy.
-- `frontend/src/App.jsx` and `frontend/src/styles.css`: responsive SkillLens workspace interface based on the supplied screenshot.
-- `frontend/src/main.jsx` and `frontend/index.html`: React entry point and document shell.
-- `backend/src/config/settings.py`: loads local `.env`, reads `GEMINI_API_KEY`, and pins the model ID.
-- `backend/src/services/gemma_service.py`: makes the SDK request and normalizes configuration/API failures.
-- `backend/src/main.py`: validates prompts/uploads, extracts document/link text, blocks private link targets, and exposes the text/image/document/link generation endpoints.
-- `backend/src/static/index.html`: standalone prompt form with loading, validation, and error states.
-- `backend/src/smoke_test.py`: direct API smoke test, run before connecting another application.
-- `check_gemma.py`: root-level shortcut to the same smoke test, using the fixed model ID.
-- `backend/tests/`: offline tests for the explicit model ID, input validation, and API responses.
-
-Image, document, and link queries are sent to the same pinned Gemma model. Image input is enabled for PNG only because PNG compatibility was verified directly against the selected model.
+All unit tests use mock fixtures and do not trigger paid or external API calls.
