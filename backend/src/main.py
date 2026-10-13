@@ -294,6 +294,7 @@ async def _read_upload(file: UploadFile) -> bytes:
 
 
 @app.get("/", include_in_schema=False)
+@app.get("/index.html", include_in_schema=False)
 def index() -> FileResponse:
     if DIST_INDEX_FILE.is_file():
         return FileResponse(DIST_INDEX_FILE)

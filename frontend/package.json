@@ -12,7 +12,8 @@
     "katex": "^0.19.0",
     "lucide-react": "^1.55.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "skilllens-ai": "file:.."
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
