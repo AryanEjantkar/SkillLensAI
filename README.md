@@ -95,3 +95,34 @@ Run the offline pytest suite (22 unit tests covering schemas, providers, visuali
 ```
 
 All unit tests use mock fixtures and do not trigger paid or external API calls.
+
+---
+
+## 5. Deploying to Vercel
+
+SkillLens AI is configured as a fullstack application for Vercel (Vite React frontend on Edge CDN + FastAPI Python serverless functions for `/api`).
+
+### Prerequisites
+1. A [Vercel](https://vercel.com) account.
+2. A Google Gemini API key from [Google AI Studio](https://aistudio.google.com/).
+
+### Deployment Methods
+
+#### Method A: Via GitHub (Recommended)
+1. Commit and push your code to GitHub.
+2. Go to [vercel.com/new](https://vercel.com/new) and import your repository.
+3. Keep default settings (Root Directory: `./`).
+4. In **Environment Variables**, add:
+   - `GEMINI_API_KEY`: `your-google-ai-studio-key`
+   - `DEFAULT_PROVIDER`: `gemini` *(or `gemma`)*
+   - `GEMINI_MODEL`: `gemini-2.5-flash`
+   - `GEMMA_MODEL`: `gemma-4-26b-a4b-it`
+5. Click **Deploy**.
+
+#### Method B: Via Vercel CLI
+```powershell
+npm i -g vercel
+vercel
+vercel env add GEMINI_API_KEY
+vercel --prod
+```

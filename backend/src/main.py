@@ -42,6 +42,8 @@ STATIC_DIRECTORY = Path(__file__).parent / "static"
 INDEX_FILE = STATIC_DIRECTORY / "index.html"
 FRONTEND_DIRECTORY = STATIC_DIRECTORY / "frontend"
 FRONTEND_INDEX_FILE = FRONTEND_DIRECTORY / "index.html"
+DIST_DIRECTORY = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+DIST_INDEX_FILE = DIST_DIRECTORY / "index.html"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_EXTRACTED_TEXT_CHARS = 40_000
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -59,6 +61,12 @@ PROMPT_DIRECTIONS = {
     "All": "Create a complete study set with three distinct sections:\n### Explanation\n[Comprehensive explanation with bold key terms and bullet points]\n### Flashcards\nQ: [Question]\nA: [Answer]\n### Quiz\n1. [Question text]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Letter]\nExplanation: [Brief explanation]\nDo not output '---' horizontal dividers.",
 }
 
+if (DIST_DIRECTORY / "assets").is_dir():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=DIST_DIRECTORY / "assets"),
+        name="dist-assets",
+    )
 if FRONTEND_DIRECTORY.is_dir():
     app.mount(
         "/frontend",
@@ -287,6 +295,8 @@ async def _read_upload(file: UploadFile) -> bytes:
 
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
+    if DIST_INDEX_FILE.is_file():
+        return FileResponse(DIST_INDEX_FILE)
     if FRONTEND_INDEX_FILE.is_file():
         return FileResponse(FRONTEND_INDEX_FILE)
     return FileResponse(INDEX_FILE)
@@ -294,17 +304,17 @@ def index() -> FileResponse:
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon_ico() -> FileResponse:
-    ico_file = FRONTEND_DIRECTORY / "favicon.ico"
-    if ico_file.is_file():
-        return FileResponse(ico_file, media_type="image/x-icon")
-    return FileResponse(STATIC_DIRECTORY / "favicon.ico")
+    for candidate in [DIST_DIRECTORY / "favicon.ico", FRONTEND_DIRECTORY / "favicon.ico", STATIC_DIRECTORY / "favicon.ico"]:
+        if candidate.is_file():
+            return FileResponse(candidate, media_type="image/x-icon")
+    raise HTTPException(status_code=404, detail="Favicon not found")
 
 
 @app.get("/favicon.svg", include_in_schema=False)
 def favicon_svg() -> FileResponse:
-    svg_file = FRONTEND_DIRECTORY / "favicon.svg"
-    if svg_file.is_file():
-        return FileResponse(svg_file, media_type="image/svg+xml")
+    for candidate in [DIST_DIRECTORY / "favicon.svg", FRONTEND_DIRECTORY / "favicon.svg", STATIC_DIRECTORY / "favicon.svg"]:
+        if candidate.is_file():
+            return FileResponse(candidate, media_type="image/svg+xml")
     raise HTTPException(status_code=404, detail="Favicon not found")
 
 

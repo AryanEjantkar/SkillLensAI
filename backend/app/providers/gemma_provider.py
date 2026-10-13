@@ -1,6 +1,7 @@
 """Gemma provider implementation using Google GenAI SDK."""
 
 import logging
+import os
 from typing import Any, Dict, Optional
 from google import genai
 from google.genai import types
@@ -28,14 +29,15 @@ class GemmaProvider(BaseAIProvider):
         return self._model_name
 
     def is_available(self) -> bool:
-        return bool(GEMINI_API_KEY)
+        return bool(os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY)
 
     def _get_client(self) -> genai.Client:
         if self._client is not None:
             return self._client
-        if not GEMINI_API_KEY:
+        api_key = os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY
+        if not api_key:
             raise ProviderUnavailableError("Gemma provider unavailable: GEMINI_API_KEY is not configured")
-        self._client = genai.Client(api_key=GEMINI_API_KEY)
+        self._client = genai.Client(api_key=api_key)
         return self._client
 
     def generate(
