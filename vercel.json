@@ -5,8 +5,7 @@
   "buildCommand": "npm run build",
   "functions": {
     "backend/src/main.py": {
-      "maxDuration": 60,
-      "memory": 1024
+      "maxDuration": 60
     }
   }
 }
